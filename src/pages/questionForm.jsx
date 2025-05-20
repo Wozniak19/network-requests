@@ -16,6 +16,7 @@ export default function QuestionForm() {
     deviceType: "",
     lanItem: "",
     wanItem: "",
+    description: "",
   });
 
   const regionDistrictMap = {
@@ -213,6 +214,7 @@ export default function QuestionForm() {
         deviceType: "",
         lanItem: "",
         wanItem: "",
+        description: "",
       });
       navigate("/dashboard");
     }
@@ -321,6 +323,16 @@ export default function QuestionForm() {
                 </option>
               ))}
           </select>
+
+          <label>Description</label>
+          <textarea
+            name="description"
+            rows="4"
+            value={formData.description}
+            onChange={handleChange}
+            required
+            placeholder="Describe the purpose of your request"
+          ></textarea>
 
           <label>Reason</label>
           <textarea

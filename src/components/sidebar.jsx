@@ -41,6 +41,9 @@ export default function Sidebar() {
               <li>
                 <Link to="/questions">Apply for Materials</Link>
               </li>
+              <li>
+                <Link to="/all-materials">View all Materials Requested</Link>
+              </li>
             </ul>
           )}
         </li>

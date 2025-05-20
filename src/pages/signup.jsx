@@ -4,7 +4,11 @@ import { supabase } from "../supabaseClient";
 import "./login.css"; // Use the same styling as login
 
 export default function Signup() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    role: "", // Add role field
+  });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,6 +23,11 @@ export default function Signup() {
     const { error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
+      options: {
+        data: {
+          role: formData.role, // Add role to user metadata
+        },
+      },
     });
     setIsLoading(false);
     if (error) {
@@ -68,6 +77,19 @@ export default function Signup() {
             onChange={handleChange}
             required
           />
+          <label>Role</label>
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select your role</option>
+            <option value="regular_user">Regular User</option>
+            <option value="network_staff">Network Staff</option>
+            <option value="manager">Manager</option>
+            <option value="general_manager">General Manager</option>
+          </select>
           <button type="submit" className="login-btn" disabled={isLoading}>
             {isLoading ? "Signing up..." : "Sign Up"}
           </button>

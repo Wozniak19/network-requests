@@ -10,74 +10,110 @@ export default function DashboardPage() {
   const [requests, setRequests] = useState([]);
   const [newRequests, setNewRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userRole, setUserRole] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [pendingAllRequests, setPendingAllRequests] = useState([]);
+  const [loadingPending, setLoadingPending] = useState(false);
 
-  const fetchRequests = async () => {
-    setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setRequests([]);
-      setNewRequests([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch all user-specific requests
-    const { data: userRequests, error: userError } = await supabase
+  // Fetch the user's own requests
+  const fetchUserRequests = async (email) => {
+    let query = supabase
       .from("Requests")
       .select("*")
-      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .eq("user_email", email);
+    const { data: userRequests, error: requestsError } = await query;
+    if (requestsError) throw requestsError;
+    setRequests(userRequests || []);
+    const pendingRequests =
+      userRequests?.filter((r) => r.status === "pending") || [];
+    setNewRequests(pendingRequests);
+  };
+
+  // Fetch all requests for managers (not just pending)
+  const fetchAllRequests = async () => {
+    setLoadingPending(true);
+    const { data: allRequests, error: allRequestsError } = await supabase
+      .from("Requests")
+      .select("*")
       .order("created_at", { ascending: false });
-
-    console.log("Logged-in user ID:", user.id);
-    console.log("Fetched user requests:", userRequests);
-
-    const newOnes = userRequests?.filter(
-      (r) => r.status?.trim().toLowerCase() === "new"
-    );
-
-    if (userError) {
-      console.error("Error fetching requests for user:", userError);
-      setRequests([]);
-      setNewRequests([]);
-    } else {
-      setRequests(userRequests || []);
-      setNewRequests(newOnes || []);
-    }
-
-    setLoading(false);
+    if (allRequestsError) throw allRequestsError;
+    setPendingAllRequests(allRequests || []);
+    setLoadingPending(false);
   };
 
   useEffect(() => {
-    fetchRequests();
+    const checkUserAndFetchData = async () => {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .channel("requests_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Requests",
-        },
-        (payload) => {
-          console.log("Change received!", payload);
-          fetchRequests();
+        if (userError || !user) {
+          navigate("/login");
+          return;
         }
-      )
-      .subscribe();
 
-    return () => {
-      subscription.unsubscribe();
+        const role = user.user_metadata?.role;
+        setUserRole(role);
+        setUserEmail(user.email);
+
+        await fetchUserRequests(user.email);
+        if (role === "manager") {
+          await fetchAllRequests();
+        }
+      } catch (err) {
+        setError(err.message);
+        setLoadingPending(false);
+      } finally {
+        setLoading(false);
+      }
     };
-  }, []);
+    checkUserAndFetchData();
+  }, [navigate]);
+
+  const handleStatusUpdate = async (requestId, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from("Requests")
+        .update({ status: newStatus })
+        .eq("id", requestId);
+      if (error) throw error;
+      // After update, re-fetch both tables for managers
+      await fetchUserRequests(userEmail);
+      if (userRole === "manager") {
+        await fetchAllRequests();
+      }
+    } catch (err) {
+      alert("Error updating request: " + err.message);
+    }
+  };
 
   const handleAllRequestsClick = () => {
-    navigate("/all-requests");
+    navigate("/all-materials");
   };
+
+  if (loading)
+    return (
+      <div className="dashboard-root">
+        <Sidebar />
+        <div className="dashboard-content">
+          <div className="loading">Loading dashboard...</div>
+        </div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="dashboard-root">
+        <Sidebar />
+        <div className="dashboard-content">
+          <div className="error-message">Error: {error}</div>
+        </div>
+      </div>
+    );
 
   return (
     <div className="dashboard-root">
@@ -91,9 +127,7 @@ export default function DashboardPage() {
               </span>
             </span>
             <div className="card-label">ALL MATERIALS REQUESTED</div>
-            <div className="card-number">
-              {loading ? "..." : requests.length}
-            </div>
+            <div className="card-number">{requests.length}</div>
           </div>
           <div className="card">
             <span className="card-icon card-blue">
@@ -103,10 +137,9 @@ export default function DashboardPage() {
             </span>
             <div className="card-label">NEW REQUESTS</div>
             <div className="card-number">
-              {loading ? "..." : newRequests.length}
+              {requests.filter((r) => r.status === "pending").length}
             </div>
           </div>
-
           <div className="card">
             <span className="card-icon card-blue">
               <span role="img" aria-label="rejected">
@@ -114,7 +147,9 @@ export default function DashboardPage() {
               </span>
             </span>
             <div className="card-label">REJECTED REQUESTS</div>
-            <div className="card-number">-</div>
+            <div className="card-number">
+              {requests.filter((r) => r.status === "rejected").length}
+            </div>
           </div>
           <div className="card">
             <span className="card-icon card-blue">
@@ -123,43 +158,48 @@ export default function DashboardPage() {
               </span>
             </span>
             <div className="card-label">COMPLETED REQUESTS</div>
-            <div className="card-number">-</div>
+            <div className="card-number">
+              {requests.filter((r) => r.status === "completed").length}
+            </div>
           </div>
         </div>
+
         <div style={{ marginTop: 40 }}>
           <h3 style={{ marginBottom: 16, color: "#2563eb" }}>
             Your Material Requests
           </h3>
-          {loading ? (
-            <div>Loading...</div>
-          ) : requests.length === 0 ? (
-            <div>No requests found.</div>
+          {requests.length === 0 ? (
+            <div className="no-requests">No requests found.</div>
           ) : (
             <div className="requests-table-wrapper">
               <table className="requests-table">
                 <thead>
                   <tr>
+                    <th>Date</th>
                     <th>Type</th>
                     <th>Item</th>
                     <th>Quantity</th>
                     <th>Region</th>
                     <th>District</th>
-                    <th>Description</th>
-                    <th>Reason</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {requests.map((req) => (
                     <tr key={req.id}>
-                      <td>{req.deviceType}</td>
-                      <td>
-                        {req.deviceType === "LAN" ? req.lanItem : req.wanItem}
-                      </td>
+                      <td>{new Date(req.created_at).toLocaleDateString()}</td>
+                      <td>{req.device_type}</td>
+                      <td>{req.item}</td>
                       <td>{req.quantity}</td>
                       <td>{req.region}</td>
                       <td>{req.district}</td>
-                      <td>{req.description}</td>
-                      <td>{req.reason}</td>
+                      <td>
+                        <span
+                          className={`status-badge ${req.status || "pending"}`}
+                        >
+                          {req.status || "Pending"}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -167,6 +207,89 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Manager Approval Table */}
+        {userRole === "manager" && (
+          <div style={{ marginTop: 60 }}>
+            <h3 style={{ marginBottom: 16, color: "#2563eb" }}>
+              All Requests (Approve/Reject/Status)
+            </h3>
+            {loadingPending ? (
+              <div className="loading">Loading requests...</div>
+            ) : pendingAllRequests.length === 0 ? (
+              <div className="no-requests">No requests found.</div>
+            ) : (
+              <div className="requests-table-wrapper">
+                <table className="requests-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>User</th>
+                      <th>Device Type</th>
+                      <th>Item</th>
+                      <th>Quantity</th>
+                      <th>Region</th>
+                      <th>District</th>
+                      <th>Reason</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingAllRequests.map((request) => (
+                      <tr key={request.id}>
+                        <td>
+                          {new Date(request.created_at).toLocaleDateString()}
+                        </td>
+                        <td>{request.user_email}</td>
+                        <td>{request.device_type}</td>
+                        <td>{request.item}</td>
+                        <td>{request.quantity}</td>
+                        <td>{request.region}</td>
+                        <td>{request.district}</td>
+                        <td>{request.reason}</td>
+                        <td>
+                          <span className={`status-badge ${request.status}`}>
+                            {request.status}
+                          </span>
+                        </td>
+                        <td>
+                          {request.status === "pending" ? (
+                            <div className="action-buttons">
+                              <button
+                                onClick={() =>
+                                  handleStatusUpdate(
+                                    request.id,
+                                    "manager_approved"
+                                  )
+                                }
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleStatusUpdate(request.id, "rejected")
+                                }
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : request.status === "manager_approved" ? (
+                            <span style={{ color: "green" }}>✔</span>
+                          ) : request.status === "completed" ? (
+                            <span style={{ color: "blue" }}>Completed</span>
+                          ) : request.status === "rejected" ? (
+                            <span style={{ color: "red" }}>✕</span>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import SignupForm from "./components/SignupForm";
 import Dashboard from "./components/dashboard";
 import Login from "./pages/login";
@@ -9,6 +9,7 @@ import QuestionForm from "./pages/questionForm";
 import AllRequests from "./pages/allRequests";
 import AllMaterials from "./pages/allMaterials";
 import AppBar from "./components/AppBar";
+import ManagerView from "./pages/ManagerView";
 
 function App() {
   const location = useLocation();
@@ -45,6 +46,8 @@ function App() {
           <Route path="/questions" element={<QuestionForm />} />
           <Route path="/all-requests" element={<AllRequests />} />
           <Route path="/all-materials" element={<AllMaterials />} />
+          {/* Redirect any unknown route to /dashboard */}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
     </>

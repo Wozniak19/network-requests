@@ -21,7 +21,9 @@ export default function AllMaterials() {
 
     const { data: userRequests, error: userError } = await supabase
       .from("Requests")
-      .select("*")
+      .select(
+        "id, created_at, user_email, status, item, device_type, quantity, region, district, reason"
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -53,6 +55,7 @@ export default function AllMaterials() {
             <table className="requests-table">
               <thead>
                 <tr>
+                  <th>Date</th>
                   <th>Type</th>
                   <th>Item</th>
                   <th>Quantity</th>
@@ -60,20 +63,27 @@ export default function AllMaterials() {
                   <th>District</th>
                   <th>Description</th>
                   <th>Reason</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
                   <tr key={req.id}>
-                    <td>{req.deviceType}</td>
-                    <td>
-                      {req.deviceType === "LAN" ? req.lanItem : req.wanItem}
-                    </td>
+                    <td>{new Date(req.created_at).toLocaleDateString()}</td>
+                    <td>{req.device_type}</td>
+                    <td>{req.item}</td>
                     <td>{req.quantity}</td>
                     <td>{req.region}</td>
                     <td>{req.district}</td>
                     <td>{req.description}</td>
                     <td>{req.reason}</td>
+                    <td>
+                      <span
+                        className={`status-badge ${req.status || "pending"}`}
+                      >
+                        {req.status || "Pending"}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,12 +1,28 @@
 // src/components/Sidebar.jsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 import "./sidebar.css"; // Import the CSS file for styling
 
 export default function Sidebar() {
   const [homeOpen, setHomeOpen] = useState(true);
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      if (error || !user) {
+        navigate("/login");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  // Always render the regular user menu, no manager dashboard link, no role-based logic
   return (
     <div className="sidebar">
       <div className="logo-section">

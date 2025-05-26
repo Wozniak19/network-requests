@@ -9,13 +9,12 @@ import "./questionForm.css";
 export default function QuestionForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    device_type: "",
+    item: "",
     quantity: "",
     region: "",
     district: "",
     reason: "",
-    deviceType: "",
-    lanItem: "",
-    wanItem: "",
     description: "",
   });
 
@@ -194,12 +193,32 @@ export default function QuestionForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const user = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userRole = user?.user_metadata?.role || "";
+    const userEmail = user?.email || "";
+
+    let item = "";
+    if (formData.device_type === "LAN") {
+      item = formData.lanItem;
+    } else if (formData.device_type === "WAN") {
+      item = formData.wanItem;
+    }
+
     const { data, error } = await supabase.from("Requests").insert([
       {
-        ...formData,
+        device_type: formData.device_type,
+        item: item,
+        quantity: formData.quantity,
+        region: formData.region,
+        district: formData.district,
+        reason: formData.reason,
+        description: formData.description,
         created_at: new Date().toISOString(),
-        status: "new",
+        status: "pending",
+        user_role: userRole,
+        user_email: userEmail,
       },
     ]);
     if (error) {
@@ -207,13 +226,12 @@ export default function QuestionForm() {
     } else {
       alert("Request submitted successfully!");
       setFormData({
+        device_type: "",
+        item: "",
         quantity: "",
         region: "",
         district: "",
         reason: "",
-        deviceType: "",
-        lanItem: "",
-        wanItem: "",
         description: "",
       });
       navigate("/dashboard");
@@ -227,8 +245,8 @@ export default function QuestionForm() {
         <form className="question-form" onSubmit={handleSubmit}>
           <label>Device Type</label>
           <select
-            name="deviceType"
-            value={formData.deviceType}
+            name="device_type"
+            value={formData.device_type}
             onChange={handleChange}
             required
           >
@@ -237,7 +255,7 @@ export default function QuestionForm() {
             <option value="WAN">WAN</option>
           </select>
 
-          {formData.deviceType === "LAN" && (
+          {formData.device_type === "LAN" && (
             <>
               <label>LAN Item</label>
               <Select
@@ -256,11 +274,12 @@ export default function QuestionForm() {
                 }
                 placeholder="Search or select LAN item"
                 isClearable
+                required
               />
             </>
           )}
 
-          {formData.deviceType === "WAN" && (
+          {formData.device_type === "WAN" && (
             <>
               <label>WAN Item</label>
               <Select
@@ -279,6 +298,7 @@ export default function QuestionForm() {
                 }
                 placeholder="Search or select WAN item"
                 isClearable
+                required
               />
             </>
           )}

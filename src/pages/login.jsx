@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./login.css";
@@ -21,7 +21,10 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
+
       if (error) throw error;
+
+      // Always redirect to dashboard for all users
       navigate("/dashboard");
     } catch (error) {
       alert(error.message);
@@ -30,22 +33,14 @@ export default function Login() {
     }
   };
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-  }, []);
-
   return (
     <div className="login-bg">
       <div className="login-card">
         <div className="login-header-graphic">
           <div className="login-header-content">
-            <h2 className="login-title">Welcome Back !</h2>
+            <h2 className="login-title">Welcome Back</h2>
             <p className="login-subtitle">
-              Sign in to continue to ECG Dashboard.
+              Sign in to access the ECG Dashboard.
             </p>
           </div>
         </div>
@@ -57,17 +52,17 @@ export default function Login() {
           />
         </div>
         <form className="login-form" onSubmit={handleSubmit}>
-          <label>Username</label>
+          <label>Email</label>
           <input
             type="email"
             name="email"
-            placeholder="ECG Username"
+            placeholder="ECG Email"
             value={formData.email}
             onChange={handleChange}
             required
           />
           <label>Password</label>
-          <div className="password-input-wrapper">
+          <div className="password-input-container">
             <input
               type={showPassword ? "text" : "password"}
               name="password"
@@ -76,27 +71,21 @@ export default function Login() {
               onChange={handleChange}
               required
             />
-            <span
+            <button
+              type="button"
               className="toggle-password"
-              onClick={() => setShowPassword((v) => !v)}
-              tabIndex={0}
-              role="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? "🙈" : "👁️"}
-            </span>
-          </div>
-          <div className="remember-me-row">
-            <input type="checkbox" id="remember" />
-            <label htmlFor="remember">Remember me</label>
+              {showPassword ? "👁️" : "👁️‍🗨️"}
+            </button>
           </div>
           <button type="submit" className="login-btn" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Log In"}
+            {isLoading ? "Signing in..." : "Sign In"}
           </button>
+          <p className="signup-link">
+            Don't have an account? <Link to="/signup">Sign up</Link>
+          </p>
         </form>
-        <p className="signup-text">
-          Don't have an account? <Link to="/signup">Signup now</Link>
-        </p>
       </div>
     </div>
   );

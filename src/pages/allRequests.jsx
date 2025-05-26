@@ -12,7 +12,9 @@ export default function AllRequests() {
     setLoading(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setRequests([]);
         return;
@@ -67,14 +69,18 @@ export default function AllRequests() {
                   <tr key={req.id}>
                     <td>{new Date(req.created_at).toLocaleDateString()}</td>
                     <td>{req.deviceType}</td>
-                    <td>{req.deviceType === "LAN" ? req.lanItem : req.wanItem}</td>
+                    <td>
+                      {req.deviceType === "LAN" ? req.lanItem : req.wanItem}
+                    </td>
                     <td>{req.quantity}</td>
                     <td>{req.region}</td>
                     <td>{req.district}</td>
                     <td>{req.reason}</td>
                     <td>
-                      <span className={`status-badge ${req.status || 'pending'}`}>
-                        {req.status || 'Pending'}
+                      <span
+                        className={`status-badge ${req.status || "pending"}`}
+                      >
+                        {req.status || "Pending"}
                       </span>
                     </td>
                   </tr>
@@ -86,4 +92,4 @@ export default function AllRequests() {
       </div>
     </div>
   );
-} 
+}

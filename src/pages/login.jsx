@@ -24,8 +24,16 @@ export default function Login() {
 
       if (error) throw error;
 
-      // Always redirect to dashboard for all users
-      navigate("/dashboard");
+      // Fetch the user to get their role
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const role = user?.user_metadata?.role;
+      if (role === "general_manager") {
+        navigate("/general-manager");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       alert(error.message);
     } finally {

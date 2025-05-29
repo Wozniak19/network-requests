@@ -10,6 +10,7 @@ import AllRequests from "./pages/allRequests";
 import AllMaterials from "./pages/allMaterials";
 import AppBar from "./components/AppBar";
 import ManagerView from "./pages/ManagerView";
+import GeneralManagerView from "./pages/GeneralManagerView";
 
 function App() {
   const location = useLocation();
@@ -46,6 +47,7 @@ function App() {
           <Route path="/questions" element={<QuestionForm />} />
           <Route path="/all-requests" element={<AllRequests />} />
           <Route path="/all-materials" element={<AllMaterials />} />
+          <Route path="/general-manager" element={<GeneralManagerView />} />
           {/* Redirect any unknown route to /dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>

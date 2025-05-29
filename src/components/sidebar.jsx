@@ -7,6 +7,7 @@ import "./sidebar.css"; // Import the CSS file for styling
 export default function Sidebar() {
   const [homeOpen, setHomeOpen] = useState(true);
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [userRole, setUserRole] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +18,8 @@ export default function Sidebar() {
       } = await supabase.auth.getUser();
       if (error || !user) {
         navigate("/login");
+      } else {
+        setUserRole(user.user_metadata?.role || "");
       }
     };
     checkUser();
@@ -54,9 +57,11 @@ export default function Sidebar() {
           </button>
           {materialsOpen && (
             <ul className="submenu">
-              <li>
-                <Link to="/questions">Apply for Materials</Link>
-              </li>
+              {userRole !== "general_manager" && (
+                <li>
+                  <Link to="/questions">Apply for Materials</Link>
+                </li>
+              )}
               <li>
                 <Link to="/all-materials">View all Materials Requested</Link>
               </li>

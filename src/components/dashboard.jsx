@@ -127,7 +127,11 @@ export default function DashboardPage() {
               </span>
             </span>
             <div className="card-label">ALL MATERIALS REQUESTED</div>
-            <div className="card-number">{requests.length}</div>
+            <div className="card-number">
+              {userRole === "manager"
+                ? pendingAllRequests.length
+                : requests.length}
+            </div>
           </div>
           <div className="card">
             <span className="card-icon card-blue">
@@ -137,7 +141,10 @@ export default function DashboardPage() {
             </span>
             <div className="card-label">NEW REQUESTS</div>
             <div className="card-number">
-              {requests.filter((r) => r.status === "pending").length}
+              {userRole === "manager"
+                ? pendingAllRequests.filter((r) => r.status === "pending")
+                    .length
+                : requests.filter((r) => r.status === "pending").length}
             </div>
           </div>
           <div className="card">
@@ -148,7 +155,10 @@ export default function DashboardPage() {
             </span>
             <div className="card-label">REJECTED REQUESTS</div>
             <div className="card-number">
-              {requests.filter((r) => r.status === "rejected").length}
+              {userRole === "manager"
+                ? pendingAllRequests.filter((r) => r.status === "rejected")
+                    .length
+                : requests.filter((r) => r.status === "rejected").length}
             </div>
           </div>
           <div className="card">
@@ -159,7 +169,10 @@ export default function DashboardPage() {
             </span>
             <div className="card-label">COMPLETED REQUESTS</div>
             <div className="card-number">
-              {requests.filter((r) => r.status === "completed").length}
+              {userRole === "manager"
+                ? pendingAllRequests.filter((r) => r.status === "completed")
+                    .length
+                : requests.filter((r) => r.status === "completed").length}
             </div>
           </div>
         </div>
